@@ -5,13 +5,23 @@ app_name = 'account_app'
 
 urlpatterns = [
     path(
-        'logout/',
-        views.logout_view,
-        name='logout'
-        ),
+        'login/', 
+        views.LoginUser.as_view(),
+        name='user-login',
+    ),
     path(
-        'UserRegister/',
-        views.UserRegister,
-        name='UserRegister'
-        ),
+        'logout/', 
+        views.LogoutView.as_view(),
+        name='user-logout',
+    ),
+    path(
+        'register/', 
+        views.UserRegisterView.as_view(),
+        name='user-register',
+    ),
+    path(
+        'update/', 
+        views.UpdatePasswordView.as_view(),
+        name='user-update',
+    ),
 ]
