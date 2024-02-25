@@ -1,45 +1,80 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
+from django.contrib.auth import authenticate
+from .models import User
 
-class CustomUserCreationForm(UserCreationForm):
-    """_summary_
-       Clase para crear un formulario personalizado para el registro de usuarios
-    """
-    first_name = forms.CharField(required=True, label='Nombres')
-    last_name = forms.CharField(required=True, label='Apellidos')
-    email = forms.EmailField(required=True, label='Correo Electrónico')
 
-    def clean_email(self):
-        """_summary_
-           Método para validar que el correo no exista en la base de datos
-        """
-        email_user = self.cleaned_data['email'].lower()
-        user_data = User.objects.filter(email=email_user)
-        if user_data.count():
-            raise ValidationError('El email ingresado ya se encuentra registrado.')
-        return email_user
-    
-    def clean_username(self):
-        """_summary_
-           Método para validar que el nombre de usuario no exista en la base de datos
-        """
-        username = self.cleaned_data['username']
-        user_data = User.objects.filter(username=username)
-        if user_data.count():
-            raise ValidationError('El nombre de usuario ingresado ya se encuentra registrado.')
-        return username
-    
-    def save(self, commit=True):
-        """_summary_
-           Método para guardar el usuario en la base de datos
-        """
-        user_data = User.objects.create_user(
-            self.cleaned_data['username'],
-            first_name = self.cleaned_data['first_name'],
-            last_name = self.cleaned_data['last_name'],
-            email = self.cleaned_data['email'],
-            password = self.cleaned_data['password1'],
+class UserRegisterForm(forms.ModelForm):
+    password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput(
+        attrs={'class': 'form-control', 'placeholder': 'Ingrese su contraseña'}))
+    password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput(
+        attrs={'class': 'form-control', 'placeholder': 'Confirme su contraseña'}))
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'full_name',
+            'ocupation',
+            'genero',
+            'date_birth',
         )
-        return user_data
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su nombre de usuario'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su nombre'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su apellido'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su correo electrónico'}),
+        }
+
+    def clean_password2(self):
+        if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+            self.add_error('Las contraseñas no coinciden')
+    
+class LoginForm(forms.Form):
+    email = forms.CharField(
+        label='E-mail',
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'placeholder': 'Correo Electronico',
+            }
+        )
+    )
+    password = forms.CharField(
+        label='Contraseña',
+        required=True,
+        widget=forms.PasswordInput(
+            attrs={
+                'placeholder': 'contraseña'
+            }
+        )
+    )
+
+    def clean(self):
+        cleaned_data = super(LoginForm, self).clean()
+        email = self.cleaned_data['email']
+        password = self.cleaned_data['password']
+
+        if not authenticate(email=email, password=password):
+            raise forms.ValidationError('Los datos de usuario no son correctos')
+        
+        return self.cleaned_data
+
+class UpdatePasswordForm(forms.Form):
+    password1 = forms.CharField(
+        label='Contraseña',
+        required=True,
+        widget=forms.PasswordInput(
+            attrs={
+                'placeholder': 'Contraseña Actual'
+            }
+        )
+    )
+    password2 = forms.CharField(
+        label='Contraseña',
+        required=True,
+        widget=forms.PasswordInput(
+            attrs={
+                'placeholder': 'Contraseña Nueva'
+            }
+        )
+    )
